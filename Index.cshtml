@@ -1,0 +1,698 @@
+﻿@using Sabio.Web.Models.ViewModels;
+@using Sabio.Web.Enums;
+@model ItemViewModel<int>
+
+@{
+    ViewBag.Title = "Index";
+    Layout = "~/Views/Shared/_LayoutPretty.cshtml";
+}
+
+@section styles {
+
+    <style>
+        .profile-update-lg {
+            width: 80%;
+            max-width: 100%;
+            text-align: center;
+            margin-top: 28px;
+        }
+
+        #clientResetBtn {
+            margin-left: 10px;
+        }
+
+        .row-address {
+            margin-top: 30px;
+        }
+
+        #map-canvas {
+            max-width: 100%;
+            height: 300px;
+            background-color: #CCC;
+            margin-left: 35px;
+            position: absolute;
+            z-index: 1;
+            width: 80%;
+        }
+
+        #clientInfoForm {
+            margin-top: 5%;
+        }
+
+        #mapPlaceholder {
+            max-width: 100%;
+            height: 300px;
+            background-color: #CCC;
+            margin-left: 35px;
+            position: absolute;
+            z-index: 2;
+            width: 80%;
+        }
+
+        #matchedAddress {
+            color: #B94A48;
+        }
+
+        .clientPicture {
+            max-height: 40%;
+        }
+
+        .delete-client-link {
+            float: right;
+            padding-right: 20px;
+        }
+
+        .view-all-link {
+            padding-left: 20px;
+        }
+
+        #photoPlaceholder {
+            padding-top: 75px;
+            font-size: 150px;
+        }
+
+        .profile-update-lg {
+            border-radius: 50%;
+        }
+
+        #addressText {
+            text-align: center;
+            margin-bottom: 15px;
+        }
+
+        .img-preview-sm {
+            height: 250px;
+            width: 250px;
+            padding: 0px;
+        }
+
+        #photo-form {
+            margin-bottom: 2%;
+            margin-top: 4%;
+        }
+    </style>
+
+}
+
+
+<div class="row wrapper border-bottom white-bg page-heading">
+    <h2>Clients</h2>
+</div>
+
+<div class="wrapper-content animated fadeInRight" data-ng-controller="clientController as main" data-ng-cloak>
+    <div class="row">
+        <div class="col-md-10 col-md-offset-1">
+            <div class="ibox float-e-margins">
+                <div class="ibox-title">
+                    <h5>Create a Client: 1) Client Info 2) Address Info</h5>
+                    <div class="ibox-tools">
+                        <a class="collapse-link">
+                            <i class="fa fa-chevron-up"></i>
+                        </a>
+
+                    </div>
+                </div>
+                <div class="ibox-content">
+                    <form class="form-horizontal" id="clientForm" name="main.clientForm" novalidate>
+                        <div class="row">
+                            <div class="col-xs-6 col-sm-6 col-md-4 col-sm-offset-3 col-xs-offset-3 col-md-offset-0">
+                                <div class="text-center">
+                                    <div data-ng-if="main.showProfilePhoto()" class="photo-container" data-ng-cloak>
+
+                                        <img alt="image" class="profile-update-lg" ng-src={{main.client.photoUrl}}>
+                                    </div>
+                                    <i class="fa fa-user" id="photoPlaceholder" aria-hidden="true" data-ng-hide="main.showProfilePhoto()"></i> <br /><br />
+                                    <h2 class="m-t-xs font-bold">{{main.pictureName}}</h2>
+                                </div>
+                            </div>
+                            <div class="col-sm-12 col-md-8" id="clientInfoForm">
+                                <div class="form-group">
+                                    <label class="col-md-3 control-label">Patient ID</label>
+                                    <div class="col-md-9">
+                                        <input type="text" placeholder="Patient ID" class="form-control"
+                                               data-ng-class="{'error': main.showClientErrors && !main.clientForm.patientIdInput.$valid}"
+                                               id="patientIdInput"
+                                               name="patientIdInput"
+                                               data-ng-model="main.client.patientId"
+                                               data-ng-minlength="2"
+                                               data-ng-maxlength="50"
+                                               @*required*@>
+                                        <div role="alert" class="help-inline error">
+                                            <!-- main.showClientErrors is set to true the first time the form is submitted. -->
+                                            @*<span class="error" data-ng-show="main.showClientErrors && main.clientForm.patientIdInput.$error.required">Patient ID is required</span>*@ <!-- errors for specific fields can be accessed with the syntax [form name].[field name].$error.[validator name] -->
+                                            <span class="error" data-ng-show="main.showClientErrors && main.clientForm.patientIdInput.$error.minlength">Too short! Patient ID must be at least 2 characters</span>
+                                            <span class="error" data-ng-show="main.showClientErrors && main.clientForm.patientIdInput.$error.maxlength">Too long! Patient ID must be 50 characters or less</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="form-group">
+                                    <label class="col-md-3 control-label">Name</label>
+                                    <div class="col-md-9">
+                                        <input type="text" placeholder="Full Name" class="form-control"
+                                               data-ng-class="{'error': main.showClientErrors && !main.clientForm.nameInput.$valid}"
+                                               id="nameInput"
+                                               name="nameInput"
+                                               data-ng-model="main.client.name"
+                                               data-ng-minlength="2"
+                                               data-ng-maxlength="50"
+                                               required>
+                                        <div role="alert" class="help-inline error">
+                                            <span class="error" data-ng-show="main.showClientErrors && main.clientForm.nameInput.$error.required">Name is required</span> <!-- errors for specific fields can be accessed with the syntax [form name].[field name].$error.[validator name] -->
+                                            <span class="error" data-ng-show="main.showClientErrors && main.clientForm.nameInput.$error.minlength">Too short! Name must be at least 2 characters</span>
+                                            <span class="error" data-ng-show="main.showClientErrors && main.clientForm.nameInput.$error.maxlength">Too long! Name must be 50 characters or less</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="form-group">
+                                    <label class="col-md-3 control-label">Referral Name</label>
+                                    <div class="col-md-9">
+                                        <input type="text" placeholder="Referral Name" class="form-control"
+                                               data-ng-class="{'error': main.showClientErrors && !main.clientForm.referralNameInput.$valid}"
+                                               id="referralNameInput"
+                                               name="referralNameInput"
+                                               data-ng-model="main.client.referralName"
+                                               data-ng-minlength="2"
+                                               data-ng-maxlength="50"
+                                               required>
+                                        <div role="alert" class="help-inline error">
+                                            <span class="error" data-ng-show="main.showClientErrors && main.clientForm.referralNameInput.$error.required">Referral name is required</span> <!-- errors for specific fields can be accessed with the syntax [form name].[field name].$error.[validator name] -->
+                                            <span class="error" data-ng-show="main.showClientErrors && main.clientForm.referralNameInput.$error.minlength">Too short! Referral name must be at least 2 characters</span>
+                                            <span class="error" data-ng-show="main.showClientErrors && main.clientForm.referralNameInput.$error.maxlength">Too long! Referral name must be 50 characters or less</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="form-group">
+                                    <label class="col-md-3 control-label">Date of Birth</label>
+                                    <div class="col-md-5">
+                                        <input type="date" class="form-control"
+                                               data-ng-class="{'error':main.showClientErrors && !main.clientForm.dobInput.$valid}"
+                                               id="dobInput"
+                                               name="dobInput"
+                                               data-ng-model="main.client.dateOfBirth"
+                                               required>
+                                        <div role="alert" class="help-inline error">
+                                            <span class="error" data-ng-show="main.showClientErrors && main.clientForm.dobInput.$error.required">Date of birth is required</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="form-group">
+                                    <label class="col-md-3 control-label">Race</label>
+
+                                    <div class="col-md-5">
+                                        <select type="" class="form-control"
+                                                data-ng-class="{'error':main.showClientErrors && !main.clientForm.raceSelect.$valid}"
+                                                id="raceSelect"
+                                                name="raceSelect"
+                                                data-ng-model="main.client.raceId"
+                                                data-ng-options="currentItem.id as currentItem.name for currentItem in main.races"
+                                                required>
+                                            <option value="">Select</option>
+                                        </select>
+                                        <div role="alert" class="help-inline error">
+                                            <span class="error" data-ng-show="main.showClientErrors && main.clientForm.raceSelect.$error.required">Race is required</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="form-group">
+                                    <label class="col-md-3 control-label">Gender</label>
+                                    <div class="col-md-5">
+                                        <select type="" placeholder="" class="form-control"
+                                                data-ng-class="{'error':main.showClientErrors && !main.clientForm.genderSelect.$valid}"
+                                                id="genderSelect"
+                                                name="genderSelect"
+                                                data-ng-model="main.client.gender"
+                                                data-ng-options="key as value for (key , value) in main.genderOptions"
+                                                required>
+                                            <option value="">Select</option>
+                                        </select>
+                                        <div role="alert" class="help-inline error">
+                                            <span class="error" data-ng-show="main.showClientErrors && main.clientForm.genderSelect.$error.required">Gender is required</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        @* Address Form *@
+                        <div class="row row-address">
+                            <div data-ng-include="'/Scripts/app/AddressForm/Form.html'" data-ng-model="main.client.address" onload="loaded = true"></div>
+                        </div>
+
+                        @* Photo Form *@
+                        <div class="col-md-8 pull-right" id="photo-form">
+                            <div class="row row-upload">
+                                <div data-ng-include="'/Scripts/app/PhotoUpload/Form.html'" data-ng-model="main.client.photo" onload="loaded = true"></div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                                <div class="form-group">
+                                    <div class="row col-md-4 col-md-offset-4">
+                                        <div class="col-md-4 col-offset-md-2" id="spinnerContainer">
+                                            <div class="sk-spinner sk-spinner-wave" data-ng-show="main.displaySpinner()">
+                                                <div class="sk-rect1"></div>
+                                                <div class="sk-rect2"></div>
+                                                <div class="sk-rect3"></div>
+                                                <div class="sk-rect4"></div>
+                                                <div class="sk-rect5"></div>
+                                            </div>
+                                        </div>
+                                        <button class="btn btn-primary" type="submit"
+                                                id="clientSubmitBtn" data-ng-click="main.onSubmitClick(main.client)">
+                                            {{main.buttonText}}
+                                        </button>
+                                        <button class="btn btn-secondary"
+                                                type="submit"
+                                                id="clientResetBtn"
+                                                data-ng-if="main.showDeleteAndReset()"
+                                                data-ng-click="main.onResetButtonClick()">
+                                            Reset Form
+                                        </button>
+                                    </div>
+                                </div>
+                        </div>
+                    </form>
+                </div>
+
+                <div class="ibox-footer">
+                    <div class="row">
+                        <a href="/Clients/All" class="view-all-link">View All Clients</a>
+                        <a href="#" class="delete-client-link"
+                           data-ng-if="main.showDeleteAndReset()"
+                           data-ng-click="main.onDeleteClientClick()">Delete</a>
+                    </div>
+                </div>
+                @*<pre>{{main.client | json}}</pre>*@
+            </div>
+        </div>
+
+    </div>
+</div>
+
+
+
+@section scripts {
+    <script src="~/Scripts/jquery.validate.js"></script>
+    <script src="~/Scripts/moment.js"></script>
+    <script src="~/Scripts/sabio.services.clients.js"></script>
+    <script src="~/Scripts/app/AddressForm/Controller.js"></script>
+    <script src="~/Scripts/sabio.services.addresses.js"></script>
+    <script src="/Scripts/sabio/core/sabio.ui.js"></script>
+    <script src="~/Scripts/notification.service.js"></script>
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCbesy30dZUQlc7lLbl_th-7kQci33w8Ow"></script>
+    <script src="~/Scripts/app/PhotoUpload/Controller.js"></script>
+    <script src="~/Scripts/fileUpload.service.js"></script>
+    <script src="/Scripts/sabio.services.races.js"></script>
+    <script src="~/Scripts/plugins/cropper/cropper.min.js"></script>
+
+    <script type="text/javascript">
+        @if (Model != null)
+        {
+            @:sabio.page.clientId = @Model.Item;
+                              }
+
+        sabio.page.genders = @(typeof(Gender).EnumToJsonByValue());
+
+    </script>
+
+    <script type="text/javascript">
+
+        //Client Service factory
+        (function () {
+            "use strict";
+
+            angular.module(APPNAME)
+                 .factory('$clientService', ClientServiceFactory);
+
+            ClientServiceFactory.$inject = ['$baseService'];
+
+            function ClientServiceFactory($baseService) {
+
+                var aSabioServiceObject = sabio.services.clients;
+
+                var newService = $baseService.merge(true, {}, aSabioServiceObject, $baseService);
+
+                return newService;
+            }
+        })();
+
+
+        //Address Service factory
+        (function () {
+            "use strict";
+
+            angular.module(APPNAME)
+                 .factory('$addressService', AddressServiceFactory);
+
+            AddressServiceFactory.$inject = ['$baseService'];
+
+            function AddressServiceFactory($baseService) {
+
+                var aSabioServiceObject = sabio.services.addresses;
+
+                var newService = $baseService.merge(true, {}, aSabioServiceObject, $baseService);
+
+                return newService;
+            }
+
+        })();
+
+        (function () {
+            "use strict";
+
+            angular.module(APPNAME)
+                .factory("$racesService", racesServiceFactory);
+
+            racesServiceFactory.$inject = ["$baseService"];
+
+            function racesServiceFactory ($baseService) {
+
+                var aSabioServiceObject = sabio.services.races;
+
+                var newService = $baseService.merge(true, {}, aSabioServiceObject, $baseService);
+
+                return newService;
+            }
+        })();
+
+
+
+        (function () {
+            "use strict";
+
+            //client Controller
+            var myapp = angular.module(APPNAME);
+
+            myapp.controller('clientController', ClientController);
+
+            ClientController.$inject = ['$scope',
+                                        '$baseController',
+                                        '$clientService',
+                                        '$filter',
+                                        '$notificationService',
+                                        '$fileUploadService',
+                                        '$racesService'];
+
+            function ClientController(
+                    $scope,
+                    $baseController,
+                    $clientService,
+                    $filter,
+                    $notificationService,
+                    $fileUploadService,
+                    $racesService) {
+
+                var vm = this;
+
+                $baseController.merge(vm, $baseController);
+
+                vm.$scope = $scope;
+                vm.$clientService = $clientService;
+                vm.$notificationService = $notificationService;
+                vm.$fileUploadService = $fileUploadService;
+                vm.$racesService = $racesService;
+                vm.notify = vm.$clientService.getNotifier($scope);
+
+                vm.newClient = true;
+                vm.formatDate = null;
+                vm.client = {};
+                vm.address = {};
+                vm.showClientErrors = false;
+                vm.genderOptions = sabio.page.genders;
+                vm.buttonText = "Submit";
+                vm.pictureName = 'Name Placeholder';
+                vm.photoUploaded = false;
+                vm.spinner = false;
+
+                vm.onSubmitClick = _onSubmitClick;
+                vm.saveClient = _saveClient;
+                vm.onInsertSuccess = _onInsertSuccess;
+                vm.onUpdateSuccess = _onUpdateSuccess;
+                vm.onError = _onError;
+                vm.onResetButtonClick = _onResetButtonClick;
+                vm.showDeleteAndReset = _showDeleteAndReset;
+                vm.onDeleteClientClick = _onDeleteClientClick;
+                vm.deleteClient = _deleteClient;
+                vm.onDeleteSuccess = _onDeleteSuccess;
+                vm.onGetRacesSuccess = _onGetRacesSuccess;
+                vm.onGetByIdSuccess = _onGetByIdSuccess;
+                vm.addClientToForm = _addClientToForm;
+                vm.displaySpinner = _displaySpinner;
+                vm.showProfilePhoto = _showProfilePhoto;
+                vm.onUploadSuccess = _onUploadSuccess;
+                vm.onUploadError = _onUploadError;
+                vm.setFormToEdit = _setFormToEdit;
+                vm.setClientPhoto = _setClientPhoto;
+
+
+                vm.notify = vm.$clientService.getNotifier($scope);
+
+                $scope.$on('$includeContentLoaded', render);
+
+                function render(){
+
+                    vm.$racesService.getAllRaces(_onGetRacesSuccess, _onError);
+
+                    $scope.$on('onAddressSuccess', function(e){
+                        
+                        vm.notify(function(){
+                            vm.newClient = false;
+                            vm.buttonText = "Update";
+                        }); 
+                    });
+
+                    if(sabio.page.clientId != null) {
+
+                        vm.$clientService.getById(sabio.page.clientId, _onGetByIdSuccess, _onError);
+                    }
+                }
+
+                function _onGetRacesSuccess (data) {
+
+                    vm.notify(function () {
+                        vm.races = data.items;
+                    });
+                }
+
+
+                function _onSubmitClick() {
+
+                    vm.showClientErrors = true;
+
+                    $scope.$broadcast('onSubmitClick');
+
+                    if(vm.clientForm.$valid){
+
+                        vm.spinner = true;
+                        $scope.$broadcast("photoUrlRequested", vm.client.photoUrl);
+
+                    }
+                }
+
+                $scope.$on("photoUrlAvailable", vm.setClientPhoto);
+
+                function _setClientPhoto (e, photoUrl) {
+                    if (photoUrl) {
+                        vm.photoUploaded = true;
+                    } else {
+                        vm.photoUploaded = false;
+                    }
+
+                    vm.client.photoUrl = photoUrl;
+                    vm.saveClient();
+                }
+
+                function _onGetByIdSuccess(data) {
+
+                    vm.addClientToForm(data);
+                }
+
+                function _addClientToForm(client) {
+
+                    var currentClient = client;
+
+                    vm.notify(function () {
+
+                        vm.photoUploaded = true;
+                        vm.newClient = false;
+                        vm.buttonText = "Update";
+
+                        vm.client.Id = sabio.page.clientId;
+                        vm.client.patientId = currentClient.patientId;
+                        vm.client.name = currentClient.name;
+                        vm.client.referralName = currentClient.referralName;
+                        vm.client.dateOfBirth = new Date($filter('date')(currentClient.dateOfBirth, "MM/dd/yyyy"));
+                        vm.client.raceId = currentClient.race.id;
+                        vm.client.gender = String(currentClient.gender);
+                        vm.client.visitType = currentClient.visitType;
+                        vm.client.photoUrl = currentClient.photoUrl;
+                        vm.address = currentClient.address;
+                        vm.pictureName = currentClient.name;
+
+                
+                        $scope.$broadcast('addressAvailable', vm.address);
+                    });
+                }
+
+                function _saveClient() {
+
+                    vm.client.ownerType = 1;
+                    vm.client.ownerId = sabio.page.clientId;
+                    var clientData = vm.merge(true, {}, vm.client);
+                    var formatDate = $filter('date')(clientData.dateOfBirth, "yyyy/MM/dd");
+                    vm.client.dateOfBirth = formatDate;
+
+                    if (vm.newClient){
+
+                        vm.$clientService.insert(vm.client, _onInsertSuccess, _onError);
+
+
+                    } else {
+
+                        vm.$clientService.update(vm.client.Id, vm.client, _onUpdateSuccess, _onError);
+                    }
+                }
+
+                function _onInsertSuccess(data) {
+
+                    vm.setFormToEdit(data.item);
+                    $scope.$broadcast('onValidParent', vm.client);
+
+                    vm.notify(function() {
+
+                        vm.spinner = false;
+                        vm.pictureName = vm.client.name;
+
+                    })
+                }
+
+                function _setFormToEdit(data) {
+
+                    vm.notify(function() {
+
+                        vm.newClient = false;
+                        vm.buttonText = "Update";
+                        vm.client.Id = data;
+                        vm.$notificationService.alert("Success!");
+
+                    })
+                }
+
+                function _onUpdateSuccess(data) {
+
+                    $scope.$broadcast('onValidParent', vm.client);
+
+                    vm.$notificationService.alert("Client #" + data.item + " successfully updated!");
+
+                    vm.notify(function(){
+
+                        vm.spinner = false;
+
+                    });
+                }
+
+                function _onUploadSuccess(response, clientData) {
+
+
+                    vm.client.photoUrl = response.item;
+
+                    var client = clientData;
+                    client.photoUrl = response.item;
+                    vm.photoUploaded = true;
+
+                    if (vm.newClient){
+
+                        vm.$clientService.insert(client, _onInsertSuccess, _onError);
+
+                    } else {
+
+                        vm.$clientService.update(vm.client.Id, client, _onUpdateSuccess, _onError);
+
+                    }
+                }
+
+                function _onUploadError() {
+
+                    vm.$notificationService.warning("Error Uploading File");
+
+                }
+
+                function _onError() {
+
+                    console.log("Error Creating Client.");
+
+                }
+
+                function _onResetButtonClick() {
+
+                    vm.showClientErrors = false;
+                    vm.newClient = true;
+                    vm.client = {};
+                    vm.address = null;
+                    vm.buttonText = "Submit";
+                    vm.clientForm.$setPristine();
+                    vm.clientForm.$setUntouched();
+
+                    $scope.$broadcast('onResetFormClick');
+                }
+
+                function _showDeleteAndReset() {
+
+                    if (vm.client != null && vm.client.Id > 0){
+
+                        return true;
+
+                    }
+                }
+
+                function _onDeleteClientClick() {
+
+                    vm.$notificationService.confirm("Delete this client?", _deleteClient, vm.client.Id);
+                }
+
+                function _deleteClient(id) {
+
+                    vm.$clientService.softDelete(id, _onDeleteSuccess, _onError);
+                }
+
+                function _onDeleteSuccess(data) {
+
+                    vm.$notificationService.alert("Client Deleted");
+
+                    vm.notify(function() {
+
+                        _onResetButtonClick();
+
+                    });
+                }
+
+                function _displaySpinner() {
+
+                    if(vm.spinner){
+                        return true;
+                    }
+                }
+
+                function _showProfilePhoto() {
+
+                    if (vm.photoUploaded){
+                        return true;
+                    }
+                }
+            }
+
+            //Photo Upload Controller
+            myapp.controller('photoUploadController', photoUploadController);
+            //Address Controller
+            myapp.controller('addressController', AddressController);
+
+        })();
+
+    </script>
+
+}

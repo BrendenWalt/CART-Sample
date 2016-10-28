@@ -1,0 +1,297 @@
+﻿
+@{
+    ViewBag.Title = "CAReports";
+    Layout = "~/Views/Shared/_LayoutPretty.cshtml";
+}
+
+@section styles{
+    <style>
+        .chart-container {
+            background-color: white;
+            padding: 25px;
+            margin-bottom: 5%;
+        }
+
+        h4.text-center {
+            margin-top: 0px;
+        }
+
+        #selectTenantBtn {
+            padding-left: 15px;
+        }
+
+        #tenantSelectContainer {
+            margin-bottom: 20px;
+        }
+
+        .empty-chart {
+            font-size: 1.6em;
+            text-align: center;
+        }
+    </style>
+
+}
+
+<div class="row wrapper border-bottom white-bg page-heading">
+    <h2>CA Reports</h2>
+</div>
+
+
+<div class="row wrapper-content" data-ng-controller="reportController as main" data-ng-cloak>
+    <div class="row">
+
+        <form class="form-horizontal" id="tenantSelectForm" name="main.tenantSelect" data-ng-if="main.tenantBool" novalidate>
+            <div class="col-md-8">
+                <div class="row">
+                    <div class="form-group" id="tenantSelectContainer">
+                        <label for="state" class="col-md-2 control-label text-right">Select a tenant:</label>
+                        <div class="col-md-3">
+                            <select class="form-control"
+                                    id="tenantSelect"
+                                    name="tenantSelect"
+                                    data-ng-model="main.tenant"
+                                    data-ng-options="item.name for item in main.tenantList"
+                                    required>
+                                <option value="" id="optionSelect">Select</option>
+                            </select>
+                        </div>
+                        <button class="btn btn-primary" type="submit"
+                                id="selectTenantBtn" data-ng-click="main.onSelectClick(main.tenant.id)">
+                            Search Tenant
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </form>
+
+        <div class="col-sm-8 col-md-offset-2">
+            <div class="ibox float-e-margins">
+                @*<div class="ibox-title">
+                        <h5>CA Form Count for {{main.graphTitle}}</h5>
+                    </div>*@
+                <div class="ibox-content">
+                    <div class="graph-wrap" data-ng-show="main.availableCountData">
+                        <h2 class="text-center">CA Forms per Week for {{main.graphTitle}}</h2>
+                        <div class="ct-chart ct-major-eleventh"></div>
+                        <h4 class="text-center">Week Of</h4>
+                    </div>
+                    <div class="empty-chart"
+                         data-ng-if="!main.availableCountData">
+                        No data available
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</div>
+
+
+@section scripts{
+
+    <script src="~/Scripts/plugins/chartist/chartist.min.js"></script>
+    <script src="~/Scripts/sabio.services.tenants.js"></script>
+    <script src="~/Scripts/moment.js"></script>
+
+    <script type="text/javascript">
+
+        (function () {
+            "use strict";
+
+            angular.module(APPNAME)
+                .factory('$tenantServices', TenantServicesFactory);
+
+            TenantServicesFactory.$inject = ['$baseService'];
+
+            function TenantServicesFactory($baseService) {
+                var aSabioServiceObject = sabio.services.tenants;
+                var newService = $baseService.merge(true, {}, aSabioServiceObject, $baseService);
+                return newService;
+            };
+        })();
+
+        (function () {
+            "use strict";
+
+            angular.module(APPNAME)
+                .controller("reportController", ReportController);
+
+            ReportController.$inject = ['$scope'
+                                        , '$tenantServices'
+                                        , '$baseController'
+                                        , '$http'
+                                        , '$rootScope'];
+
+            function ReportController($scope, $tenantServices, $baseController, $http, $rootScope) {
+
+                var vm = this;
+
+                $baseController.merge(vm, $baseController);
+
+                vm.$scope = $scope;
+                vm.$http = $http;
+                vm.$tenantServices = $tenantServices;
+                vm.notify = vm.$tenantServices.getNotifier($scope);
+
+                vm.availableCountData = true;
+                vm.graphTitle = "All Tenants";
+                vm.tenantList = null;
+                vm.tenant = {};
+                vm.tenantId = null;
+                vm.tenantBool = false;
+
+                vm.onGetSuccess = _onGetSuccess;
+                vm.onGetError = _onGetError;
+                vm.createChart = _createChart;
+                vm.checkTenant = _checkTenant;
+                vm.getAllTenants = _getAllTenants;
+                vm.onSelectClick = _onSelectClick;
+                vm.queryReportsForTenant = _queryReportsForTenant;
+                vm.getUserTenantSuccess = _getUserTenantSuccess;
+                vm.getUserTenantError = _getUserTenantError;
+
+                render();
+
+                function render() {
+
+                    vm.$http({
+                        method: 'GET',
+                        url: "/api/reports/caforms"
+                    }).then(_onGetSuccess, _onGetError);
+
+                    $rootScope.$on('sendTenantId', function (e, tenantId) {
+                        vm.tenantId = tenantId;
+                        vm.checkTenant();
+
+                    });
+                    if (vm.tenantId == null) {
+                        vm.getAllTenants();
+                    } 
+
+                }
+
+                function _onGetSuccess(data) {
+                    vm.createChart(data.data.items);
+                }
+
+                function _onGetError() {
+                    console.log("Error Retrieving CA Form Report");
+                }
+
+                function _findWeekIndex(elem) {
+                    return elem.id == currentInjury.id;
+                }
+
+                function _createChart(formCountObject) {
+                    if (formCountObject) {
+                        var data = {
+                            labels: [],
+                            series: []
+                        };
+
+                        //populate data array
+                        var arr = [];
+
+                        //get the last value in the countObject array.  Use this value as starting point for for loop
+                        var weeksAgoVal = formCountObject[formCountObject.length - 1].weeksOld;
+
+                        var countObjCopy = angular.copy(formCountObject);
+                        var weekPop = countObjCopy.pop();
+                        //for loop goes backward from weeksAgoVal
+                        for (var i = weeksAgoVal; i >= 0; i--) {
+
+                            var formCount = 0;
+
+                            if (weekPop) {
+                                if (weekPop.weeksOld == i) {
+                                    formCount = weekPop.formCount;
+                                    weekPop = countObjCopy.pop();
+                                }
+                            }
+                            var weekSpan = moment().subtract(i, 'week').format('MM/DD');
+                            data.labels.push(weekSpan);
+                            arr.push(formCount);
+                        }
+
+                        data.series.push(arr);
+
+                        var options = {
+                            low: 0,
+                            axisY: {
+                                onlyInteger: true,
+                            },
+                            //axisX: {
+                            //    labelInterpolationFnc: function(value) {
+                            //        return 'week of ' + value;
+                            //    }
+                            //},
+                            fullWidth: true,
+
+                            lineSmooth: Chartist.Interpolation.none({
+                                fillHoles: true
+                            }),
+                            chartPadding: {
+                                right: 50
+                            }
+                        }
+                        vm.availableCountData = true;
+                        new Chartist.Line('.ct-chart', data, options);
+                    } else {
+                        vm.availableCountData = false;
+                    }
+                }
+
+                function _getAllTenants() {
+                    $tenantServices.getAllActive(_onGetTenantsSuccess, _onGetTenantError);
+                }
+
+                function _onGetTenantsSuccess(data) {
+                    vm.notify(function () {
+                        vm.tenantList = data.items;
+                    });
+                }
+
+                function _onGetTenantError() {
+                    console.log("Error");
+                }
+
+                function _getUserTenantSuccess(data) {
+                    vm.notify(function () {
+                        vm.tenant = data.item;
+                        vm.graphTitle = vm.tenant.name;
+                    });
+                }
+
+                function _getUserTenantError() {
+                    console.log("Error retrieving details");
+                }
+
+                function _onSelectClick(tenantId) {
+                    vm.queryReportsForTenant(tenantId);
+                    vm.graphTitle = vm.tenant.name;
+                }
+
+                function _queryReportsForTenant(tenantId) {
+
+                    $http.get("/api/reports/caforms", {
+                        params: { tenantId: tenantId }
+                    }).then(_onGetSuccess,
+                             _onGetError);
+                }
+
+                function _checkTenant() {
+                    if (vm.tenantId) {
+                        vm.tenantBool = false;
+                        vm.$tenantServices.getById(vm.tenantId, _getUserTenantSuccess, _getUserTenantError);
+                    } else {
+                        vm.tenantBool = true;
+                    }
+                }
+            }
+
+        })();
+
+    </script>
+
+}
+
